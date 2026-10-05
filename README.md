@@ -4,6 +4,8 @@ A browser-based inspector for [Stream Deck custom layouts](https://docs.elgato.c
 edit layout JSON on the left, see it rendered on a Stream Deck + (200×100) or Neo infobar (232×50) on the right,
 and simulate `setFeedback` calls against it. Everything runs in the browser; no backend is required.
 
+**Try it: https://kazwolfe.github.io/sd-layout-simulator/**
+
 ## Features
 
 - **Live preview** of `text`, `pixmap`, `bar`, and `gbar` items, including zOrder, opacity, `enabled`,
@@ -15,10 +17,9 @@ and simulate `setFeedback` calls against it. Everything runs in the browser; no 
   named colors, snippets for `rect`/`range`/`font`; item keys and runtime-settable properties in the payload) and
   hover docs on property names.
 - **Editor ↔ preview sync**: click an item to jump to it in the JSON; move the cursor in the JSON to select it in the preview.
-- **Live feedback**: a `setFeedback` payload editor below the layout JSON. With **Live** on, every valid edit is applied
-  as you type; otherwise send with ⌘↵. Problems (unknown keys, immutable or mistyped properties) are underlined in place.
-  Feedback accumulates like on the device; **Reset** returns to the layout as defined. **Copy code** gives you the
-  `ev.action.setFeedback(...)` call. Toggle the preview between the layout as defined and with feedback applied.
+- **Live feedback**: a `setFeedback` payload editor below the layout JSON, applied as you type. Problems (unknown keys,
+  immutable or mistyped properties) are underlined in place. **Copy code** gives you the `ev.action.setFeedback(...)`
+  call. Toggle the preview between the layout as defined and with feedback applied.
 - **Item inspector**: effective property values, marked as coming from the layout, from feedback, or from documented defaults.
 - Built-in Stream Deck + layouts (`$X1`, `$A0`, `$A1`, `$B1`, `$B2`, `$C1`) plus the docs demos for Stream Deck + and Neo; open/download/copy JSON.
 

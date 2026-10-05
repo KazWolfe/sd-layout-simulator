@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { paintToCss, colorToCss } from './color';
 import { setAtPath } from './edit';
-import { applyFeedback, foldFeedback, normalizeFeedback } from './feedback';
+import { applyFeedback, normalizeFeedback } from './feedback';
 import { formatJson } from './format';
 import { itemIndexAtOffset, parseSource } from './parse';
 import { TEMPLATES, templateSource } from './templates';
@@ -148,16 +148,10 @@ describe('feedback', () => {
     expect(warnings.map((w) => w.path)).toEqual([['title', 'rect'], ['indicator']]);
   });
 
-  it('accumulates events and applies them', () => {
-    const state = foldFeedback(
-      [
-        { id: 1, time: 0, payload: { title: { value: 'A', color: 'red' } } },
-        { id: 2, time: 0, payload: { title: 'B', indicator: 30 } },
-      ],
-      items,
-    );
-    const applied = applyFeedback(items, state);
-    expect(applied[0]).toMatchObject({ value: 'B', color: 'red' });
+  it('applies a payload without touching immutable properties', () => {
+    const { patches } = normalizeFeedback({ title: { value: 'A', color: 'red' }, indicator: 30 }, items);
+    const applied = applyFeedback(items, patches);
+    expect(applied[0]).toMatchObject({ value: 'A', color: 'red' });
     expect(applied[1]).toMatchObject({ value: 30, rect: [0, 20, 10, 10] });
   });
 });

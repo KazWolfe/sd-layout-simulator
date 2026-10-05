@@ -16,14 +16,6 @@ import type { LayoutItem } from './types';
 export type ItemPatch = Partial<Omit<LayoutItem, 'key' | 'type' | 'rect'>> & Record<string, unknown>;
 export type FeedbackState = Record<string, ItemPatch>;
 
-export interface FeedbackEvent {
-  id: number;
-  time: number;
-  payload: Record<string, unknown>;
-  /** Identifies the UI control that produced this event, for coalescing. */
-  source?: string;
-}
-
 export interface FeedbackWarning {
   message: string;
   /** Location of the problem within the payload, e.g. ["title", "rect"]. */
@@ -90,17 +82,6 @@ function mergePatch(base: ItemPatch, patch: ItemPatch): ItemPatch {
   const out: ItemPatch = { ...base, ...patch };
   if (base.font && patch.font) out.font = { ...base.font, ...patch.font };
   return out;
-}
-
-/** Folds a sequence of setFeedback payloads into accumulated per-key state. */
-export function foldFeedback(events: FeedbackEvent[], items: LayoutItem[]): FeedbackState {
-  const state: FeedbackState = {};
-  for (const e of events) {
-    for (const [key, patch] of Object.entries(normalizeFeedback(e.payload, items).patches)) {
-      state[key] = mergePatch(state[key] ?? {}, patch);
-    }
-  }
-  return state;
 }
 
 export function applyFeedback(items: LayoutItem[], state: FeedbackState): LayoutItem[] {

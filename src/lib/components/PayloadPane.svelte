@@ -22,17 +22,12 @@
 
 <div class="pane-header">
   <span class="title">
-    Live feedback <code>setFeedback(…)</code>
+    Live Feedback <code>setFeedback(…)</code>
     {#if counts.error}<span class="error">● invalid JSON</span>{:else if counts.warning}<span class="warning">▲ {counts.warning}</span>{/if}
   </span>
   <span class="actions">
-    <label title="Apply the payload on every edit"><input type="checkbox" checked={app.live} onchange={(e) => app.setLive(e.currentTarget.checked)} /> Live</label>
     <button onclick={() => app.resetPayloadToSample()} title="Replace with a sample payload for this layout">Sample</button>
     <button onclick={copy} disabled={!app.payload} title="Copy as plugin code">{copied ? 'Copied ✓' : 'Copy code'}</button>
-    <button onclick={() => app.resetFeedback()} disabled={app.events.length === 0} title="Clear all feedback and show the layout as defined"
-      >Reset</button
-    >
-    <button class="primary" onclick={() => app.sendPayload()} disabled={!app.payload} title="Send (⌘↵ / Ctrl+↵)">Send</button>
   </span>
 </div>
 <div class="editor-wrap">
@@ -42,7 +37,6 @@
     value={app.payloadText}
     diagnostics={app.payloadDiagnostics}
     onchange={(v) => app.setPayloadText(v)}
-    onsubmit={() => app.sendPayload()}
   />
 </div>
 
@@ -60,12 +54,6 @@
     display: flex;
     gap: 6px;
     align-items: center;
-  }
-  .actions label {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-    margin-right: 4px;
   }
   .actions button {
     padding: 2px 8px;

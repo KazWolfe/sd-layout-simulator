@@ -2,7 +2,7 @@ import { customDevice, presetDevice, type Device, type PresetId, type Size } fro
 import { loadLiveSchema, schema } from './layout/schema';
 import { setAtPath } from './layout/edit';
 import { isObj } from './util';
-import { applyFeedback, foldFeedback, normalizeFeedback, samplePayload, type FeedbackEvent } from './layout/feedback';
+import { applyFeedback, normalizeFeedback, samplePayload } from './layout/feedback';
 import { formatJson } from './layout/format';
 import { keyRangeAt, parseSource } from './layout/parse';
 import { TEMPLATES, templateSource } from './layout/templates';
@@ -15,9 +15,7 @@ const BACKGROUND_KEY = 'sd-layout-sim:background';
 
 interface Persisted {
   source: string;
-  events: FeedbackEvent[];
   payload: string;
-  live: boolean;
   customSize: Size;
   previewDevice: PreviewDevice;
 }
@@ -58,7 +56,6 @@ function sanitizeSize(size: Size): Size {
 export type PreviewMode = 'layout' | 'feedback';
 export type PreviewDevice = PresetId | 'custom';
 
-const LIVE_SOURCE = 'payload:live';
 
 class AppState {
   source = $state(saved.source ?? templateSource(TEMPLATES.find((t) => t.id === '$B1')!));
@@ -118,14 +115,11 @@ class AppState {
   readonly layoutItems: LayoutItem[] = $derived(this.validation.layout?.items ?? []);
 
   // setFeedback simulation
-  events: FeedbackEvent[] = $state.raw(saved.events ?? []);
-  readonly feedbackState = $derived(foldFeedback(this.events, this.layoutItems));
-  mode: PreviewMode = $state('feedback');
+  /** Preview the layout as defined, or with the payload applied via setFeedback. */
+  mode: PreviewMode = $state('layout');
 
   /** Text of the live feedback payload editor. */
   payloadText = $state(saved.payload ?? '');
-  /** When on, every valid edit of the payload is applied immediately. */
-  live = $state(saved.live ?? true);
 
   readonly payloadParsed = $derived(parseSource(this.payloadText));
   readonly payloadDiagnostics: Diagnostic[] = $derived.by(() => {
@@ -142,6 +136,13 @@ class AppState {
   readonly payload: Record<string, unknown> | null = $derived.by(() => {
     const { value, diagnostics } = this.payloadParsed;
     return diagnostics.length === 0 && isObj(value) ? value : null;
+  });
+  // The last valid payload, so the preview holds steady while the JSON is mid-edit.
+  #lastValidPayload: Record<string, unknown> | null = null;
+  /** What setFeedback would apply: the payload editor's content. */
+  readonly feedbackState = $derived.by(() => {
+    if (this.payload) this.#lastValidPayload = this.payload;
+    return this.#lastValidPayload ? normalizeFeedback(this.#lastValidPayload, this.layoutItems).patches : {};
   });
 
   /** Items with all feedback so far applied (regardless of preview mode). */
@@ -167,8 +168,6 @@ class AppState {
   /** Uploaded images keyed by file name, used to resolve pixmap file paths. */
   assets: Record<string, string> = $state({});
 
-  #nextEventId = Math.max(0, ...this.events.map((e) => e.id)) + 1;
-
   constructor() {
     // Prefer the latest published schema; keep the bundled copy if it can't be fetched.
     loadLiveSchema().then((replaced) => {
@@ -178,9 +177,7 @@ class AppState {
       $effect(() => {
         const data: Persisted = {
           source: this.source,
-          events: this.events,
           payload: this.payloadText,
-          live: this.live,
           customSize: this.customSize,
           previewDevice: this.previewDevice,
         };
@@ -219,55 +216,24 @@ class AppState {
     }
   }
 
-  sendFeedback(payload: Record<string, unknown>, source?: string) {
-    const last = this.events.at(-1);
-    const event: FeedbackEvent = { id: this.#nextEventId++, time: Date.now(), payload, source };
-    // Coalesce rapid changes from the same control (e.g. dragging a slider), and
-    // consecutive live payload edits, so the latest edit replaces the previous one.
-    if (source && last?.source === source && (source === LIVE_SOURCE || event.time - last.time < 1500)) {
-      this.events = [...this.events.slice(0, -1), { ...event, id: last.id }];
-    } else {
-      this.events = [...this.events, event];
-    }
-    this.mode = 'feedback';
-  }
-
-  /** Updates the payload editor text, applying it immediately in live mode. */
+  /** Updates the payload editor text; a valid payload switches the preview to show it. */
   setPayloadText(text: string) {
     this.payloadText = text;
-    if (this.live && this.payload) this.sendFeedback(this.payload, LIVE_SOURCE);
-  }
-
-  setLive(on: boolean) {
-    this.live = on;
-    if (on && this.payload) this.sendFeedback(this.payload, LIVE_SOURCE);
+    if (this.payload) this.mode = 'feedback';
   }
 
   /**
-   * Sets one item's value from a quick control. The change is written into the
-   * payload editor (preserving its formatting) so it always reflects what has
-   * been sent, then applied: the whole payload in live mode, else just this key.
+   * Sets one item's value from a quick control by writing it into the payload
+   * (preserving formatting). Needs the payload to be valid JSON.
    */
   setItemValue(key: string, value: unknown) {
     const current = this.payload;
-    if (current) {
-      const existing = current[key];
-      this.payloadText = setAtPath(this.payloadText, isObj(existing) ? [key, 'value'] : [key], value);
-    }
-    if (this.live && this.payload) this.sendFeedback(this.payload, LIVE_SOURCE);
-    else this.sendFeedback({ [key]: value }, `control:${key}`);
-  }
-
-  sendPayload() {
-    if (this.payload) this.sendFeedback(this.payload);
+    if (!current) return;
+    this.setPayloadText(setAtPath(this.payloadText, isObj(current[key]) ? [key, 'value'] : [key], value));
   }
 
   resetPayloadToSample() {
     this.payloadText = formatJson(samplePayload(this.layoutItems));
-  }
-
-  resetFeedback() {
-    this.events = [];
   }
 }
 

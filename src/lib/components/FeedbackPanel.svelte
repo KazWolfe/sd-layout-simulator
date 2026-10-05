@@ -20,18 +20,16 @@
 
 <div class="panel">
   <section>
-    <div class="row spread">
-      <h3>Quick controls</h3>
-      <button disabled={app.events.length === 0} onclick={() => app.resetFeedback()}>Reset feedback</button>
-    </div>
+    <h3>Quick controls</h3>
     <p class="hint">
-      Changes are written into the <b>Live feedback</b> payload below the layout JSON and sent with <code>setFeedback</code>.
-      Feedback accumulates like on the device.
+      Quickly apply simple changes to <b>Live Feedback</b> for interactive previews.
     </p>
     {#if current.length === 0}
       <p class="empty">No items in the layout.</p>
+    {:else if !app.payload}
+      <p class="msg warning">The Live Feedback payload isn't valid JSON; fix it to use quick controls.</p>
     {/if}
-    <div class="controls">
+    <div class="controls" class:disabled={!app.payload}>
       {#each current as item, i (i)}
         {@const srcIndex = app.sourceIndexOf(i)}
         <label
@@ -79,6 +77,10 @@
 </div>
 
 <style>
+  .controls.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
   .controls {
     display: grid;
     gap: 6px;

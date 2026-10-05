@@ -1,9 +1,9 @@
 <script lang="ts">
   import { json } from '@codemirror/lang-json';
   import { lintGutter, setDiagnostics, type Diagnostic as CmDiagnostic } from '@codemirror/lint';
-  import { Annotation, EditorState, Prec, StateEffect, StateField, type Extension } from '@codemirror/state';
+  import { Annotation, EditorState, StateEffect, StateField, type Extension } from '@codemirror/state';
   import { oneDark } from '@codemirror/theme-one-dark';
-  import { Decoration, EditorView, keymap, type DecorationSet } from '@codemirror/view';
+  import { Decoration, EditorView, type DecorationSet } from '@codemirror/view';
   import { basicSetup } from 'codemirror';
   import { onMount } from 'svelte';
   import type { Diagnostic } from '../layout/types';
@@ -14,7 +14,6 @@
     highlight = null,
     onchange,
     oncursor,
-    onsubmit,
     label,
     extensions = [],
   }: {
@@ -24,8 +23,6 @@
     highlight?: { from: number; to: number } | null;
     onchange: (value: string) => void;
     oncursor?: (offset: number) => void;
-    /** Called on Mod-Enter. */
-    onsubmit?: () => void;
     /** Accessible name for the editor. */
     label?: string;
     /** Extra CodeMirror extensions (read once, at mount). */
@@ -75,7 +72,6 @@
           oneDark,
           theme,
           highlightField,
-          Prec.highest(keymap.of([{ key: 'Mod-Enter', run: () => (onsubmit ? (onsubmit(), true) : false) }])),
           ...(label ? [EditorView.contentAttributes.of({ 'aria-label': label })] : []),
           extensions,
           EditorView.updateListener.of((u) => {

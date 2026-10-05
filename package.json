@@ -2,6 +2,8 @@
   "name": "streamdeck-layout-sim",
   "version": "0.1.0",
   "description": "Stream Deck + / Neo layout simulator",
+  "homepage": "https://kazwolfe.github.io/sd-layout-simulator/",
+  "repository": "github:KazWolfe/sd-layout-simulator",
   "private": true,
   "type": "module",
   "scripts": {

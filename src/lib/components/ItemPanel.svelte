@@ -4,7 +4,7 @@
 
   const SOURCES = {
     layout: { label: 'JSON', meaning: 'Set in the layout JSON.' },
-    feedback: { label: 'setFeedback', meaning: 'Set at runtime by setFeedback; overrides the JSON. Shown in "With feedback" mode.' },
+    feedback: { label: 'setFeedback', meaning: 'Set at runtime by setFeedback; overrides the JSON. Shown in "With Feedback" mode.' },
     default: { label: 'default', meaning: 'Not set anywhere, so Stream Deck uses its documented default.' },
   } as const;
 
