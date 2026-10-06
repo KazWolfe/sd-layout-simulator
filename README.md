@@ -78,3 +78,5 @@ Rendering approximates the Stream Deck app; it is not pixel-identical. In partic
 - Gradients run left to right.
 - 8-digit hex colors are read as Qt-style `#AARRGGBB`.
 - Pixmaps are scaled to fit their rect while keeping their aspect ratio.
+- **Pixel-perfect** mode rasterizes the screen at native resolution on a canvas and upscales it without smoothing.
+  Antialiasing is still the browser's, not Qt's.

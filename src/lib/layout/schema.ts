@@ -9,7 +9,7 @@ import type { Controller, ItemType, Range } from './types';
 
 export const SCHEMA_URL = 'https://schemas.elgato.com/streamdeck/plugins/layout.json';
 
-type Json = Record<string, any>;
+export type Json = Record<string, any>;
 
 export interface PropSchema {
   name: string;
@@ -46,6 +46,8 @@ export interface PropSchema {
 
 export interface ItemModel {
   type: ItemType;
+  /** `$ref` of the item's definition in the raw schema. */
+  ref: string;
   properties: Record<string, PropSchema>;
   required: string[];
 }
@@ -61,10 +63,12 @@ export interface SchemaModel {
   id: string;
   /** Where the schema came from. */
   source: 'bundled' | 'live';
+  /** The schema JSON itself, for the editors' JSON language service. */
+  raw: Json;
   controllers: ControllerModel[];
 }
 
-function resolveRef(root: Json, ref: string): Json {
+export function resolveRef(root: Json, ref: string): Json {
   if (!ref.startsWith('#/')) throw new Error(`Unsupported $ref: ${ref}`);
   return ref
     .slice(2)
@@ -152,14 +156,15 @@ function toProp(root: Json, name: string, s: Json): PropSchema {
   return prop;
 }
 
-function toItemModel(root: Json, type: ItemType, def: Json): ItemModel {
+function toItemModel(root: Json, type: ItemType, ref: string): ItemModel {
+  const def = resolveRef(root, ref);
   const properties = Object.fromEntries(Object.entries<Json>(def.properties).map(([k, v]) => [k, toProp(root, k, v)]));
   // The default range is only stated in prose, on `value` ("default range is `0..100`").
   const m = /default range is `?(-?\d+)\.\.(-?\d+)`?/i.exec(properties.value?.rawDescription ?? '');
   if (properties.range && m && properties.range.default === undefined) {
     properties.range.default = { min: Number(m[1]), max: Number(m[2]) };
   }
-  return { type, properties, required: def.required ?? [] };
+  return { type, ref, properties, required: def.required ?? [] };
 }
 
 export function buildSchemaModel(root: Json, source: SchemaModel['source']): SchemaModel {
@@ -170,7 +175,7 @@ export function buildSchemaModel(root: Json, source: SchemaModel['source']): Sch
     const items = {} as Record<ItemType, ItemModel>;
     for (const rule of itemSchema.allOf as Json[]) {
       const type = rule.if.properties.type.const as ItemType;
-      items[type] = toItemModel(root, type, resolveRef(root, rule.then.$ref));
+      items[type] = toItemModel(root, type, rule.then.$ref);
     }
     // Canvas size: the maximum x and y of any item's rect.
     const rect = Object.values(items)[0].properties.rect.tuple!;
@@ -184,7 +189,7 @@ export function buildSchemaModel(root: Json, source: SchemaModel['source']): Sch
       items,
     };
   });
-  return { id: root.$id, source, controllers };
+  return { id: root.$id, source, raw: root, controllers };
 }
 
 // The active schema: the bundled copy, possibly replaced by a live one (see loadLiveSchema).

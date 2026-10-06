@@ -2,11 +2,9 @@
   import { colorToCss } from '../layout/color';
   import { itemDefaults } from '../layout/schema';
   import type { TextItem } from '../layout/types';
+  import { FALLBACK_FONT_SIZE } from './raster';
 
   let { item }: { item: TextItem } = $props();
-
-  // The schema documents no default font size.
-  const FALLBACK_FONT_SIZE = 12;
 
   let el: HTMLDivElement | undefined = $state();
   let overflowing = $state(false);

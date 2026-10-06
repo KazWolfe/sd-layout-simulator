@@ -14,7 +14,7 @@
   import type { Diagnostic } from './lib/layout/types';
   import { app } from './lib/state.svelte';
   import { readAsDataUrl, sessionNumber } from './lib/util';
-  import { layoutHints, typeHints } from './lib/editor/hints';
+  import { layoutHints } from './lib/editor/hints';
 
   type Tab = 'feedback' | 'item' | 'problems' | 'images';
 
@@ -168,7 +168,7 @@
         <Editor
           bind:this={editor}
           label="Layout JSON"
-          extensions={typeHints(layoutHints)}
+          extensions={layoutHints()}
           value={app.source}
           diagnostics={app.diagnostics}
           {highlight}
@@ -266,7 +266,7 @@
       <div class="stage-controls">
         <label>
           Zoom
-          <input type="range" min="1" max="6" step="0.5" bind:value={app.zoom} />
+          <input type="range" min="0.5" max="6" step="0.5" bind:value={app.zoom} />
           <output>{app.zoom}×</output>
         </label>
         <span class="bg-controls" title="Simulated device background, drawn behind the layout. You can also drop an image on the preview.">
@@ -276,6 +276,7 @@
         </span>
         <label><input type="checkbox" bind:checked={app.showBounds} /> Item bounds</label>
         <label><input type="checkbox" bind:checked={app.showRulers} /> Rulers</label>
+        <label title="Render at the device's native resolution and upscale without smoothing"><input type="checkbox" bind:checked={app.pixelPerfect} /> Pixel-perfect</label>
         <label title="Show dummy content for items without a value"><input type="checkbox" bind:checked={app.placeholders} /> Placeholders</label>
         <output class="coords" aria-label="Pointer position">{app.pointer ? `${app.pointer.x}, ${app.pointer.y}` : ''}</output>
       </div>

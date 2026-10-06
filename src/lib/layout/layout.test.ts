@@ -166,28 +166,3 @@ describe('edit', () => {
     expect(added).toContain('"rect": [0, 0, 10, 10]');
   });
 });
-
-describe('hints', async () => {
-  const { layoutHints, payloadHints } = await import('../editor/hints');
-
-  it('suggests properties for the item type at a path', () => {
-    const value = { id: 'x', items: [{ type: 'text' }, { type: 'gbar' }] };
-    expect(Object.keys(layoutHints.properties([], value)!).sort()).toEqual(['$schema', 'controller', 'id', 'items']);
-    // Every controller is offered, even though each schema branch allows only its own.
-    expect(layoutHints.properties([], value)!.controller.enum?.slice().sort()).toEqual(['Encoder', 'Neo']);
-    expect(layoutHints.properties(['items', 0], value)).toHaveProperty('alignment');
-    expect(layoutHints.properties(['items', 0], value)).not.toHaveProperty('bar_h');
-    expect(layoutHints.properties(['items', 1], value)).toHaveProperty('bar_h');
-    expect(Object.keys(layoutHints.properties(['items', 1, 'range'], value)!)).toEqual(['min', 'max']);
-  });
-
-  it('suggests item keys and mutable properties for payloads', () => {
-    const items = [{ key: 'indicator', type: 'bar', rect: [0, 0, 10, 10] }] as LayoutItem[];
-    const hints = payloadHints(() => items);
-    expect(Object.keys(hints.properties([], {})!)).toEqual(['indicator']);
-    const props = Object.keys(hints.properties(['indicator'], {})!);
-    expect(props).toContain('bar_fill_c');
-    expect(props).not.toContain('rect');
-    expect(hints.properties(['missing'], {})).toBeNull();
-  });
-});

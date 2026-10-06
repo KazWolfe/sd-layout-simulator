@@ -157,6 +157,8 @@ class AppState {
   zoom = $state(3);
   showBounds = $state(true);
   showRulers = $state(true);
+  /** Render at the device's native resolution and upscale with nearest-neighbor, instead of scaling vectors. */
+  pixelPerfect = $state(false);
   /** Pointer position over the screen, in device pixels. */
   pointer: { x: number; y: number } | null = $state(null);
   /** Show dummy content for items that have no value. */

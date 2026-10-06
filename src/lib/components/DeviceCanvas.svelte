@@ -4,6 +4,7 @@
   import Bar from '../render/Bar.svelte';
   import Pixmap from '../render/Pixmap.svelte';
   import { resolvePixmap } from '../render/pixmap';
+  import { DEVICE_FONT, rasterize } from '../render/raster';
   import { PLACEHOLDER_IMAGE, placeholderBarValue, placeholderText } from '../render/placeholder';
   import Text from '../render/Text.svelte';
   import Ruler from './Ruler.svelte';
@@ -75,6 +76,16 @@
     app.pointer = { x: Math.floor((ev.clientX - r.left) / zoom), y: Math.floor((ev.clientY - r.top) / zoom) };
   }
 
+  // Pixel-perfect mode: draw the screen at native resolution, then upscale it
+  // with nearest-neighbor filtering instead of scaling the vector DOM.
+  let raster: HTMLCanvasElement | undefined = $state();
+  // Bumped when an image the rasterizer is waiting on finishes loading.
+  let imagesLoaded = $state(0);
+  $effect(() => {
+    void imagesLoaded;
+    if (raster) rasterize(raster, device, entries, app.background, () => imagesLoaded++);
+  });
+
   // Keep labels legible regardless of zoom.
   const labelSize = $derived(11 / zoom);
 </script>
@@ -98,33 +109,43 @@
         <Ruler orientation="vertical" length={device.height} {zoom} size={RULER} highlight={marked ? [my, my + mh] : null} pointer={app.pointer?.y ?? null} />
       </div>
     {/if}
-    <div class="device" style:width="{device.width}px" style:height="{device.height}px" style:transform="scale({zoom})">
-      {#if app.background}
-        <div class="background" style:background-image="url({app.background})"></div>
-      {/if}
-      {#each entries as e (e.index)}
-        {@const [x, y, w, h] = e.item.rect}
-        <div
-          class="item"
-          style:left="{x}px"
-          style:top="{y}px"
-          style:width="{w}px"
-          style:height="{h}px"
-          style:z-index={e.item.zOrder ?? 0}
-          style:opacity={e.item.opacity ?? 1}
-          style:background={paintToCss(e.item.background) ?? undefined}
-          style:display={e.item.enabled === false ? 'none' : undefined}
-        >
-          {#if e.item.type === 'text'}
-            <Text item={e.item} />
-          {:else if e.item.type === 'pixmap'}
-            <Pixmap item={e.item} src={e.src} />
-          {:else}
-            <Bar item={e.item} />
-          {/if}
-        </div>
-      {/each}
-    </div>
+    {#if app.pixelPerfect}
+      <canvas bind:this={raster} class="raster" style:width="{device.width * zoom}px" style:height="{device.height * zoom}px"></canvas>
+    {:else}
+      <div
+        class="device"
+        style:width="{device.width}px"
+        style:height="{device.height}px"
+        style:transform="scale({zoom})"
+        style:--device-font={DEVICE_FONT}
+      >
+        {#if app.background}
+          <div class="background" style:background-image="url({app.background})"></div>
+        {/if}
+        {#each entries as e (e.index)}
+          {@const [x, y, w, h] = e.item.rect}
+          <div
+            class="item"
+            style:left="{x}px"
+            style:top="{y}px"
+            style:width="{w}px"
+            style:height="{h}px"
+            style:z-index={e.item.zOrder ?? 0}
+            style:opacity={e.item.opacity ?? 1}
+            style:background={paintToCss(e.item.background) ?? undefined}
+            style:display={e.item.enabled === false ? 'none' : undefined}
+          >
+            {#if e.item.type === 'text'}
+              <Text item={e.item} />
+            {:else if e.item.type === 'pixmap'}
+              <Pixmap item={e.item} src={e.src} />
+            {:else}
+              <Bar item={e.item} />
+            {/if}
+          </div>
+        {/each}
+      </div>
+    {/if}
 
     <!-- Inspection overlay: outlines, hit-testing, labels. Not part of the device output. -->
     <svg
@@ -212,7 +233,13 @@
     top: 0;
     transform-origin: 0 0;
     overflow: hidden;
-    --device-font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+  .raster {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: block;
+    image-rendering: pixelated;
   }
   .item {
     position: absolute;

@@ -1,10 +1,10 @@
 <script lang="ts">
   import { feedbackSnippet } from '../layout/feedback';
   import { app } from '../state.svelte';
-  import { payloadHints, typeHints } from '../editor/hints';
+  import { payloadHints } from '../editor/hints';
   import Editor from './Editor.svelte';
 
-  const hints = typeHints(payloadHints(() => app.layoutItems));
+  const hints = payloadHints(() => app.layoutItems, () => app.declaredController);
 
   const counts = $derived({
     error: app.payloadDiagnostics.filter((d) => d.severity === 'error').length,
